@@ -49,11 +49,17 @@ def save_data(data):
 # ── Binance helpers ───────────────────────────────────────────────────────────
 async def fetch_price(symbol: str) -> float | None:
     url = f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}"
-    async with aiohttp.ClientSession() as s:
-        async with s.get(url, timeout=aiohttp.ClientTimeout(total=10)) as r:
-            if r.status == 200:
-                d = await r.json()
-                return float(d["price"])
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.get(url, timeout=aiohttp.ClientTimeout(total=10)) as r:
+                text = await r.text()
+                if r.status == 200:
+                    d = await r.json(content_type=None)
+                    return float(d["price"])
+                else:
+                    logger.error(f"Binance error {r.status} per {symbol}: {text}")
+    except Exception as e:
+        logger.error(f"fetch_price {symbol}: {e}")
     return None
 
 async def fetch_klines(symbol: str, interval="1h", limit=50):
